@@ -143,6 +143,7 @@ All editor settings are nested under the `editor` key.
 | `editor.insertFinalNewline` | bool | `true` | Ensure files end with a newline on load and save |
 | `editor.trimTrailingWhitespace` | bool | `false` | Remove trailing whitespace from lines on save |
 | `editor.focusOnOpen` | bool | `false` | Focus the editor when opening a file |
+| `editor.previewTabs` | bool | `true` | Open files as preview tabs that are replaced by the next opened file; `false` opens every file as a regular tab. Also in **Settings > Editor > Indentation > Preview tabs** |
 | `editor.syntaxHighlight` | bool | `true` | Enable syntax highlighting |
 | `editor.gitGutter` | bool | `true` | Show git change indicators in the gutter, compared against the staged version of the file (the git index) |
 | `editor.scrollbarGitMarks` | bool | `true` | Mark git changes on the editor's vertical scrollbar. Needs `editor.gitGutter` |

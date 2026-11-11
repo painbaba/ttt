@@ -35,3 +35,24 @@ func TestPreviewTabsGatesTabReplacement(t *testing.T) {
 		t.Fatalf("after re-enabling: tabs = %d, want 3", len(g.tabs))
 	}
 }
+
+func TestPreviewTabsDisabledKeepsUntouchedPlaceholderReplacement(t *testing.T) {
+	tmp := t.TempDir()
+	a := filepath.Join(tmp, "a.txt")
+	b := filepath.Join(tmp, "b.txt")
+	for _, p := range []string{a, b} {
+		if err := os.WriteFile(p, []byte("one\ntwo\nthree"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	g := NewEditorGroupWidget(nil, 4, true, "relative")
+	g.PreviewTabs = false
+	g.OpenFile(a) // still replaces the untouched placeholder
+	if len(g.tabs) != 1 {
+		t.Fatalf("placeholder replacement with preview disabled: tabs = %d, want 1", len(g.tabs))
+	}
+	g.OpenFile(b) // no preview tabs: b appends instead of replacing a
+	if len(g.tabs) != 2 {
+		t.Fatalf("with preview disabled: tabs = %d, want 2", len(g.tabs))
+	}
+}

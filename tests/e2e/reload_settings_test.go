@@ -1,6 +1,8 @@
 package e2e
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/eugenioenko/ttt/internal/config"
@@ -85,6 +87,61 @@ func TestReloadSettingsCommandRegistered(t *testing.T) {
 	}
 	if cmd.Title != "Reload Settings" {
 		t.Errorf("expected title 'Reload Settings', got %q", cmd.Title)
+	}
+}
+
+func TestReloadSettingsPreviewTabs(t *testing.T) {
+	h := newTestHarness(t, 80, 24)
+	defer h.stop()
+
+	if !h.app.EditorGroup.PreviewTabs {
+		t.Fatal("expected preview tabs enabled on the editor group at startup")
+	}
+
+	a := filepath.Join(h.dir, "alpha.txt")
+	b := filepath.Join(h.dir, "beta.txt")
+	c := filepath.Join(h.dir, "gamma.txt")
+	h.app.EditorGroup.OpenFile(a)
+	h.app.EditorGroup.OpenFile(b) // preview enabled: b replaces a
+	h.redraw()
+	if got := h.app.EditorGroup.TabCount(); got != 1 {
+		t.Fatalf("with preview enabled: tabs = %d, want 1", got)
+	}
+
+	// Live-apply disabled preview tabs; the on-disk settings still default to
+	// enabled, so tab behavior must follow the applied value, not the file.
+	s := config.DefaultSettings()
+	disabled := false
+	s.Editor.PreviewTabs = &disabled
+	h.app.ApplySettings(s)
+	h.redraw()
+	if h.app.EditorGroup.PreviewTabs {
+		t.Fatal("expected PreviewTabs false on the editor group after ApplySettings")
+	}
+	h.app.EditorGroup.OpenFile(c) // must not replace the open preview tab
+	h.redraw()
+	if got := h.app.EditorGroup.TabCount(); got != 2 {
+		t.Fatalf("after disabling preview tabs: tabs = %d, want 2", got)
+	}
+	if got := h.app.EditorGroup.ActiveFilePath(); got != c {
+		t.Fatalf("active tab = %q, want %q", got, c)
+	}
+
+	// Reload from disk with preview tabs disabled changes tab-opening behavior.
+	cfgDir := filepath.Join(h.dir, "config")
+	raw := `{"editor":{"previewTabs":false}}`
+	if err := os.WriteFile(filepath.Join(cfgDir, "settings.json"), []byte(raw), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	h.exec("settings.reload")
+	h.redraw()
+	if h.app.EditorGroup.PreviewTabs {
+		t.Fatal("expected PreviewTabs false after settings.reload")
+	}
+	h.app.EditorGroup.OpenFile(a) // active tab c is not a preview: a appends
+	h.redraw()
+	if got := h.app.EditorGroup.TabCount(); got != 3 {
+		t.Fatalf("after reload with preview disabled: tabs = %d, want 3", got)
 	}
 }
 
